@@ -60,12 +60,12 @@ tests = TestList [
 
   , TestLabel "au-4" $ TestCase $
       let x = var "x"
-          y = var "y"
-          t1 = Cons (sym "c") (Cons x (Cons (sym "c") x))
-          t2 = Cons (sym "d") (Cons x (Cons (sym "d") y))
+          c = sym "c"
+          d = sym "d"
           z0 = var "z_0"
-          z1 = var "z_1"
-          expected = Cons z0 (Cons x (Cons z0 z1))
+          t1 =       Cons c  (Cons x (Cons c   x         ))
+          t2 =       Cons d  (Cons x (Cons d  (var "y")  ))
+          expected = Cons z0 (Cons x (Cons z0 (var "z_1")))
       in assertEqual "Complex anti-unification"
          expected
          (au [t1, t2])
@@ -73,12 +73,12 @@ tests = TestList [
   , TestLabel "au-4b" $ TestCase $
       let x = var "x"
           y = var "y"
-          t1 = Cons (sym "c") (Cons y (Cons (sym "c") x))
-          t2 = Cons (sym "d") (Cons x (Cons (sym "d") y))
           z0 = var "z_0"
           z1 = var "z_1"
           z2 = var "z_2"
-          expected = Cons z0 (Cons z1 (Cons z0 z2))
+          t1 =       Cons (sym "c") (Cons y  (Cons (sym "c") x ))
+          t2 =       Cons (sym "d") (Cons x  (Cons (sym "d") y ))
+          expected = Cons  z0       (Cons z1 (Cons  z0       z2))
       in assertEqual "Complex anti-unification with different variables"
          expected
          (au [t1, t2])
@@ -86,58 +86,58 @@ tests = TestList [
   , TestLabel "au-5" $ TestCase $
       let x = var "x"
           y = var "y"
+          z0 = var "z_0"
+          z1 = var "z_1"
           t1 = Cons (sym "c") (Cons x (Cons (sym "c") x))
           t2 = Cons (sym "d") (Cons x (Cons (sym "d") y))
           t3 = Cons (sym "d") (Cons x (Cons (sym "d") y))
-          z0 = var "z_0"
-          z1 = var "z_1"
           expected = Cons z0 (Cons x (Cons z0 z1))
       in assertEqual "Three terms anti-unification"
          expected
          (au [t1, t2, t3])
 
   , TestLabel "au-6" $ TestCase $
-      let t1 = Cons (sym "lambda") (Cons (sym "5") (sym "5"))
-          t2 = Cons (sym "lambda") (Cons (sym "t") (sym "t"))
-          z0 = var "z_0"
-          expected = Cons (sym "lambda") (Cons z0 z0)
+      let z0 = var "z_0"
+          t1 =       Cons (sym "lambda") (Cons (sym "5") (sym "5"))
+          t2 =       Cons (sym "lambda") (Cons (sym "t") (sym "t"))
+          expected = Cons (sym "lambda") (Cons  z0        z0      )
       in assertEqual "Lambda abstraction"
          expected
          (au [t1, t2])
 
   , TestLabel "au-7" $ TestCase $
-      let t1 = Cons (sym "lambda") (Cons (sym "5") (sym "5"))
-          t2 = Cons (sym "lambda") (Cons (sym "t") (sym "t"))
-          t3 = Cons (sym "lambda") (Cons (sym "5") (sym "6"))
-          z0 = var "z_0"
+      let z0 = var "z_0"
           z1 = var "z_1"
-          expected = Cons (sym "lambda") (Cons z0 z1)
+          t1 =       Cons (sym "lambda") (Cons (sym "5") (sym "5"))
+          t2 =       Cons (sym "lambda") (Cons (sym "t") (sym "t"))
+          t3 =       Cons (sym "lambda") (Cons (sym "5") (sym "6"))
+          expected = Cons (sym "lambda") (Cons  z0        z1      )
       in assertEqual "Lambda abstraction with three terms"
          expected
          (au [t1, t2, t3])
 
   , TestLabel "au-8" $ TestCase $
-      let t1 = Cons (sym "lambda") (Cons (sym "5") (sym "5"))
-          t2 = Cons (sym "lambda") (Cons (sym "t") (sym "t"))
-          x = var "x"
-          t_lhs = Cons (sym "lambda") (Cons x x)
-          t_rhs = au [t1, t2]
+      let x = var "x"
           z0 = var "z_0"
-          expected = Cons (sym "lambda") (Cons z0 z0)
+          t1 =       Cons (sym "lambda") (Cons (sym "5") (sym "5"))
+          t2 =       Cons (sym "lambda") (Cons (sym "t") (sym "t"))
+          t_lhs =    Cons (sym "lambda") (Cons  x         x       )
+          t_rhs = au [t1, t2]
+          expected = Cons (sym "lambda") (Cons  z0        z0      )
       in assertEqual "Lambda abstraction comparison"
          expected
          (au [t_lhs, t_rhs])
 
   , TestLabel "au-9" $ TestCase $
-      let t1 = Cons (sym "lambda") (Cons (sym "5") (sym "5"))
-          t2 = Cons (sym "lambda") (Cons (sym "t") (sym "t"))
-          t3 = Cons (sym "lambda") (Cons (sym "5") (sym "6"))
-          x = var "x"
-          t_lhs = Cons (sym "lambda") (Cons x x)
-          t_rhs = au [t1, t2, t3]
+      let x = var "x"
           z0 = var "z_0"
           z1 = var "z_1"
-          expected = Cons (sym "lambda") (Cons z0 z1)
+          t1 =       Cons (sym "lambda") (Cons (sym "5") (sym "5"))
+          t2 =       Cons (sym "lambda") (Cons (sym "t") (sym "t"))
+          t3 =       Cons (sym "lambda") (Cons (sym "5") (sym "6"))
+          t_lhs =    Cons (sym "lambda") (Cons  x         x       )
+          t_rhs = au [t1, t2, t3]
+          expected = Cons (sym "lambda") (Cons  z0        z1      )
       in assertEqual "Lambda abstraction comparison with three terms"
          expected
          (au [t_lhs, t_rhs])
@@ -145,9 +145,9 @@ tests = TestList [
   , TestLabel "au-10" $ TestCase $
       let x = var "x"
           y = var "y"
-          t1 = Cons (sym "lambda") (Cons x x)
-          t2 = Cons (sym "lambda") (Cons y y)
           z0 = var "z_0"
+          t1 =       Cons (sym "lambda") (Cons x  x )
+          t2 =       Cons (sym "lambda") (Cons y  y )
           expected = Cons (sym "lambda") (Cons z0 z0)
       in assertEqual "Lambda abstraction with different variables"
          expected
@@ -155,23 +155,13 @@ tests = TestList [
 
   , TestLabel "au-11" $ TestCase $
       let x = var "x"
-          t1 = Cons (sym "lambda") (Cons x x)
-          t2 = Cons (sym "lambda") (Cons x x)
+          t1 =       Cons (sym "lambda") (Cons x x)
+          t2 =       Cons (sym "lambda") (Cons x x)
           expected = Cons (sym "lambda") (Cons x x)
       in assertEqual "Lambda abstraction with same variable"
          expected
          (au [t1, t2])
 
-  , TestLabel "au-12" $ TestCase $
-      let x = var "x"
-          c = sym "c"
-          d = sym "d"
-          t1 = Cons c (Cons x (Cons c x))
-          t2 = Cons d (Cons x (Cons d (var "y")))
-          expected = Cons (var "z_0") (Cons x (Cons (var "z_0") (var "z_1")))
-      in assertEqual "Simplified Ostvold's example"
-         expected
-         (au [t1, t2])
   ]
 
 -- Run all tests
