@@ -60,20 +60,20 @@ auTheta :: [Term] -> State (Int, Subst [Term] Id) Term
 auTheta terms =
   if null terms
     then error "auTheta: |terms| must be > 0"
-    else
-      do theta <- gets snd
-         case terms of
-           (t:ts) | all (== t) ts ->  -- Rule 7
-             pure t
-           ts | all isCons ts ->  -- Rule 8
-             do s  <- auTheta [t1 | Cons t1 _ <- ts]
-                s' <- auTheta [t2 | Cons _ t2 <- ts]
-                pure (Cons s s')
-           ts | Just x <- lookupSubst ts theta ->  -- Rule 9
-             pure (Var x)
-           _ ->  -- Rule 10
-             do z <- gen 'z' Id terms
-                pure (Var z)
+    else do theta <- gets snd
+            case terms of
+              (t:ts) | all (== t) ts ->  -- Rule 7
+                pure t
+              ts | all isCons ts ->  -- Rule 8
+                do s  <- auTheta [t1 | Cons t1 _ <- ts]
+                   s' <- auTheta [t2 | Cons _ t2 <- ts]
+                   pure (Cons s s')
+              ts ->
+                case lookupSubst ts theta of
+                  Just x -> pure (Var x) -- Rule 9
+                  Nothing ->  -- Rule 10
+                    do z <- gen 'z' Id terms
+                       pure (Var z)
 
 postProcess :: Term -> Subst Sy Id -> Term
 postProcess   (Cons a d) subst = Cons (postProcess a subst) (postProcess d subst)
