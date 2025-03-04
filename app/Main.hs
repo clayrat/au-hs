@@ -161,6 +161,17 @@ tests = TestList [
       in assertEqual "Lambda abstraction with same variable"
          expected
          (au [t1, t2])
+
+  , TestLabel "au-12" $ TestCase $
+      let x = var "x"
+          c = sym "c"
+          d = sym "d"
+          t1 = Cons c (Cons x (Cons c x))
+          t2 = Cons d (Cons x (Cons d (var "y")))
+          expected = Cons (var "z_0") (Cons x (Cons (var "z_0") (var "z_1")))
+      in assertEqual "Simplified Ostvold's example"
+         expected
+         (au [t1, t2])
   ]
 
 -- Run all tests
