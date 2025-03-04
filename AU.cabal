@@ -17,6 +17,7 @@ executable AU
     main-is:          Main.hs
     other-modules: AU
     build-depends:    base ^>=4.20.0.0
+                    , mtl
                     , HUnit
     hs-source-dirs:   app
     default-language: Haskell2010
