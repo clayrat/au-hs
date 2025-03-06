@@ -33,7 +33,7 @@ unify ((tl, tr) : cs) =
                  else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs1 v tr cs))
            (_, Var v) ->
               if v `occurs` tl
-                 then Right (OccFailR v tr)
+                 then Right (OccFailR v tl)
                  else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs1 v tl cs))
            (Arr al dl, Arr ar dr) ->
               second ArrArrRec (unify ((al, ar) : (dl, dr) : cs))
