@@ -6,15 +6,15 @@ import Subst
 
 type Constr = (Term, Term)
 
-subs :: Id -> Term -> [Constr] -> [Constr]
-subs v t = map (bimap (sub v t) (sub v t))
+subs1 :: Id -> Term -> [Constr] -> [Constr]
+subs1 v t = map (bimap (sub1 v t) (sub1 v t))
 
 data UFail =
     OccFailL  Id Term
   | OccFailR  Id Term
-  | ConCon    Sy Sy
-  | ConArr    Sy Term Term
-  | ArrCon    Sy Term Term
+  | SymSym    Sy Sy
+  | SymArr    Sy Term Term
+  | ArrSym    Sy Term Term
   | ArrArrRec UFail
   | EqRec     UFail
   | SubsRecL  UFail
@@ -30,17 +30,17 @@ unify ((tl, tr) : cs) =
            (Var v, _) ->
               if v `occurs` tr
                  then Right (OccFailL v tr)
-                 else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs v tr cs))
+                 else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs1 v tr cs))
            (_, Var v) ->
               if v `occurs` tl
                  then Right (OccFailR v tr)
-                 else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs v tl cs))
-           (Cons al dl, Cons ar dr) ->
+                 else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs1 v tl cs))
+           (Arr al dl, Arr ar dr) ->
               second ArrArrRec (unify ((al, ar) : (dl, dr) : cs))
-           (Cons al dl, Sym sr) ->
-              Right (ArrCon sr al dl)
-           (Sym sl, Cons ar dr) ->
-              Right (ConArr sl ar dr)
+           (Arr al dl, Sym sr) ->
+              Right (ArrSym sr al dl)
+           (Sym sl, Arr ar dr) ->
+              Right (SymArr sl ar dr)
            (Sym sl, Sym sr) ->
-              Right (ConCon sl sr)
+              Right (SymSym sl sr)
 

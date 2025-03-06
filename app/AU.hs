@@ -18,10 +18,10 @@ preProcess terms =
   in (t , s)
   where
     preProcess' :: Term -> State (Int, Subst Id Sy) Term
-    preProcess' (Cons a d) =
+    preProcess' (Arr a d) =
       do a' <- preProcess' a
          d' <- preProcess' d
-         pure (Cons a' d')
+         pure (Arr a' d')
     preProcess' (Var v) =
       do sub <- gets snd
          case lookupSubst v sub of
@@ -39,10 +39,10 @@ auTheta terms =
             case terms of
               (t:ts) | all (== t) ts ->  -- Rule 7
                 pure t
-              ts | all isCons ts ->  -- Rule 8
-                do s  <- auTheta [t1 | Cons t1 _ <- ts]
-                   s' <- auTheta [t2 | Cons _ t2 <- ts]
-                   pure (Cons s s')
+              ts | all isArr ts ->  -- Rule 8
+                do s  <- auTheta [t1 | Arr t1 _ <- ts]
+                   s' <- auTheta [t2 | Arr _ t2 <- ts]
+                   pure (Arr s s')
               ts ->
                 case lookupSubst ts theta of
                   Just x -> pure (Var x) -- Rule 9
@@ -51,16 +51,16 @@ auTheta terms =
                        pure (Var z)
 
 postProcess :: Term -> Subst Sy Id -> Term
-postProcess   (Cons a d) subst = Cons (postProcess a subst) (postProcess d subst)
-postProcess c@(Sym s)    subst = maybe c Var (lookupSubst s subst)
-postProcess t            _     = t
+postProcess   (Arr a d) sub = Arr (postProcess a sub) (postProcess d sub)
+postProcess c@(Sym s)   sub = maybe c Var (lookupSubst s sub)
+postProcess t           _   = t
 
 -- Anti-unification
 au :: [Term] -> Term
 au terms =
   if null terms
     then error "au: |terms| must be > 0"
-    else let (terms', subst) = preProcess terms
-             invSubst = invertSubst subst
+    else let (terms', sub) = preProcess terms
+             invSubst = invertSubst sub
              s = evalState (auTheta terms') (0, [])  -- Rule 6
          in postProcess s invSubst
