@@ -3,6 +3,10 @@
 module Main where
 
 import Test.HUnit
+
+import Term
+import Subst
+import Unify
 import AU
 
 -- Test cases
@@ -162,6 +166,45 @@ tests = TestList [
          expected
          (au [t1, t2])
 
+  , TestLabel "unify-1" $ TestCase $
+      let t1 = Cons (sym "a") (sym "b")
+          t2 = Cons (sym "a") (sym "b")
+          expected = Left []
+      in assertEqual "Unify identical terms"
+         expected
+         (unify [(t1, t2)])
+
+  , TestLabel "unify-2" $ TestCase $
+      let t1 = Cons (var "x") (sym "b")
+          t2 = Cons (sym "a") (sym "b")
+          expected = Left [(Id "x", sym "a")]
+      in assertEqual "Unify with variable"
+         expected
+         (unify [(t1, t2)])
+
+  , TestLabel "unify-3" $ TestCase $
+      let t1 = Cons (var "x") (var "y")
+          t2 = Cons (sym "a") (sym "b")
+          expected = Left [(Id "x", sym "a"), (Id "y", sym "b")]
+      in assertEqual "Unify with two variables"
+         expected
+         (unify [(t1, t2)])
+
+  , TestLabel "unify-4" $ TestCase $
+      let t1 = Cons (var "x") (var "x")
+          t2 = Cons (sym "a") (sym "b")
+          expected = Right (ArrArrRec (SubsRecL (ConCon (Sy "a") (Sy "b"))))
+      in assertEqual "Unify with conflicting variables"
+         expected
+         (unify [(t1, t2)])
+
+  , TestLabel "unify-5" $ TestCase $
+      let t1 = Cons (var "x") (Cons (var "y") (var "x"))
+          t2 = Cons (sym "a") (Cons (sym "b") (sym "a"))
+          expected = Left [(Id "x", sym "a"), (Id "y", sym "b")]
+      in assertEqual "Unify nested terms"
+         expected
+         (unify [(t1, t2)])
   ]
 
 -- Run all tests

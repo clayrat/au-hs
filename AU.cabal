@@ -15,7 +15,10 @@ common warnings
 executable AU
     import:           warnings
     main-is:          Main.hs
-    other-modules: AU
+    other-modules:   Term
+                   , Subst
+                   , Unify
+                   , AU
     build-depends:    base ^>=4.20.0.0
                     , mtl
                     , HUnit

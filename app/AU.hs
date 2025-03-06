@@ -2,26 +2,8 @@ module AU where
 
 import Control.Monad.State
 import Data.Char (ord, chr)
-
-newtype Id = Id String deriving (Eq, Show)
-newtype Sy = Sy String deriving (Eq, Show)
-
-data Term = Var Id
-          | Sym Sy
-          | Cons Term Term
-          deriving (Eq, Show)
-
-var :: String -> Term
-var = Var . Id
-
-sym :: String -> Term
-sym = Sym . Sy
-
-isCons :: Term -> Bool
-isCons (Cons _ _) = True
-isCons _          = False
-
-type Subst a b = [(a, b)]
+import Term
+import Subst
 
 gen :: Char -> (String -> b) -> a -> State (Int, Subst a b) b
 gen c f a = do
@@ -29,13 +11,6 @@ gen c f a = do
   let b = f (c : '_' : [chr (ord '0' + n)])
   put (n + 1, (a, b) : s)
   return b
-
-lookupSubst :: Eq a => a -> Subst a b -> Maybe b
-lookupSubst _   []           = Nothing
-lookupSubst key ((k,v):rest) = if key == k then Just v else lookupSubst key rest
-
-invertSubst :: Subst a b -> Subst b a
-invertSubst = map (\(x, y) -> (y, x))
 
 preProcess :: [Term] -> ([Term], Subst Id Sy)
 preProcess terms =
