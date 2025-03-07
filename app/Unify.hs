@@ -10,8 +10,8 @@ subs1 :: Id -> Term -> [Constr] -> [Constr]
 subs1 v t = map (bimap (sub1 v t) (sub1 v t))
 
 data UFail =
-    OccFailL  Id Term
-  | OccFailR  Id Term
+    OccL      Id Term
+  | OccR      Id Term
   | SymSym    Sy Sy
   | SymArr    Sy Term Term
   | ArrSym    Sy Term Term
@@ -21,26 +21,29 @@ data UFail =
   | SubsRecR  UFail
   deriving (Eq, Show)
 
-unify :: [Constr] -> Either (Subst Id Term) UFail
+unify        :: [Constr] -> Either (Subst Id Term) UFail
+unifyNeqHead :: Term -> Term -> [Constr] -> Either (Subst Id Term) UFail
+
 unify []              = Left []
 unify ((tl, tr) : cs) =
   if tl == tr
      then second EqRec (unify cs)
-     else case (tl, tr) of
-           (Var v, _) ->
-              if v `occurs` tr
-                 then Right (OccFailL v tr)
-                 else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs1 v tr cs))
-           (_, Var v) ->
-              if v `occurs` tl
-                 then Right (OccFailR v tl)
-                 else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs1 v tl cs))
-           (Arr al dl, Arr ar dr) ->
-              second ArrArrRec (unify ((al, ar) : (dl, dr) : cs))
-           (Arr al dl, Sym sr) ->
-              Right (ArrSym sr al dl)
-           (Sym sl, Arr ar dr) ->
-              Right (SymArr sl ar dr)
-           (Sym sl, Sym sr) ->
-              Right (SymSym sl sr)
+     else unifyNeqHead tl tr cs
+
+unifyNeqHead (Var v)      tr         cs =
+  if v `occurs` tr
+    then Right (OccL v tr)
+    else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs1 v tr cs))
+unifyNeqHead  tl         (Var v)     cs =
+  if v `occurs` tl
+    then Right (OccR v tl)
+    else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs1 v tl cs))
+unifyNeqHead (Arr al dl) (Arr ar dr) cs =
+  second ArrArrRec (unify ((al, ar) : (dl, dr) : cs))
+unifyNeqHead (Arr al dl) (Sym sr)    _  =
+  Right (ArrSym sr al dl)
+unifyNeqHead (Sym sl)    (Arr ar dr) _  =
+  Right (SymArr sl ar dr)
+unifyNeqHead (Sym sl)    (Sym sr)    _  =
+  Right (SymSym sl sr)
 
