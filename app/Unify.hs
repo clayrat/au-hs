@@ -27,19 +27,23 @@ unifyNeqHead :: Term -> Term -> [Constr] -> Either (Subst Id Term) UFail
 unify []              = Left []
 unify ((tl, tr) : cs) =
   if tl == tr
-     then second EqRec (unify cs)
+     then second EqRec $
+          unify cs
      else unifyNeqHead tl tr cs
 
 unifyNeqHead (Var v)      tr         cs =
   if v `occurs` tr
     then Right (OccL v tr)
-    else bimap (\s -> (v, tr) : s) SubsRecL (unify (subs1 v tr cs))
+    else bimap (\s -> (v, tr) : s) SubsRecL $
+         unify (subs1 v tr cs)
 unifyNeqHead  tl         (Var v)     cs =
   if v `occurs` tl
     then Right (OccR v tl)
-    else bimap (\s -> (v, tl) : s) SubsRecR (unify (subs1 v tl cs))
+    else bimap (\s -> (v, tl) : s) SubsRecR $
+         unify (subs1 v tl cs)
 unifyNeqHead (Arr al dl) (Arr ar dr) cs =
-  second ArrArrRec (unify ((al, ar) : (dl, dr) : cs))
+  second ArrArrRec $
+  unify ((al, ar) : (dl, dr) : cs)
 unifyNeqHead (Arr al dl) (Sym sr)    _  =
   Right (ArrSym sr al dl)
 unifyNeqHead (Sym sl)    (Arr ar dr) _  =
