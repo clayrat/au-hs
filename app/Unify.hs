@@ -1,6 +1,8 @@
 module Unify where
 
 import Data.Bifunctor
+
+import Base
 import Term
 import Subst
 

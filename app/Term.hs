@@ -1,7 +1,6 @@
 module Term where
 
-newtype Id = Id String deriving (Eq, Show)
-newtype Sy = Sy String deriving (Eq, Show)
+import Base
 
 data Term = Var Id
           | Sym Sy
@@ -17,6 +16,16 @@ sym = Sym . Sy
 isArr :: Term -> Bool
 isArr (Arr _ _) = True
 isArr _         = False
+
+syms :: Term -> [Sy]
+syms (Var _)   = []
+syms (Sym s)   = [s]
+syms (Arr a d) = syms a ++ syms d
+
+vars :: Term -> [Id]
+vars (Var v)   = [v]
+vars (Sym _)   = []
+vars (Arr a d) = vars a ++ vars d
 
 occurs :: Id -> Term -> Bool
 occurs v (Var x)   = v == x

@@ -15,7 +15,8 @@ common warnings
 executable AU
     import:           warnings
     main-is:          Main.hs
-    other-modules:   Term
+    other-modules:   Base
+                   , Term
                    , Subst
                    , Unify
                    , AU

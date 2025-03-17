@@ -1,23 +1,24 @@
 module AU where
 
 import Control.Monad.State
-import Data.Char (ord, chr)
+
+import Base
 import Term
 import Subst
 
-gen :: Char -> (String -> b) -> a -> State (Int, Subst a b) b
-gen c f a = do
-  (n, s) <- get
-  let b = f (c : '_' : [chr (ord '0' + n)])
-  put (n + 1, (a, b) : s)
-  return b
+gen :: Unfinite b => a -> State (b, Subst a b) b
+gen a = do
+  (x, s) <- get
+  put (fresh1 x, (a, x) : s)
+  return x
 
 preProcess :: [Term] -> ([Term], Subst Id Sy)
 preProcess terms =
-  let (t, (_ , s)) = runState (mapM preProcess' terms) (0, [])
+  let sys = concatMap syms terms
+      (t, (_ , s)) = runState (mapM preProcess' terms) (fresh sys, [])
   in (t , s)
   where
-    preProcess' :: Term -> State (Int, Subst Id Sy) Term
+    preProcess' :: Term -> State (Sy, Subst Id Sy) Term
     preProcess' (Arr a d) =
       do a' <- preProcess' a
          d' <- preProcess' d
@@ -27,11 +28,11 @@ preProcess terms =
          case lookupSubst v sub of
            Just c -> pure (Sym c)
            Nothing ->
-             do c <- gen 'c' Sy v
+             do c <- gen v
                 pure (Sym c)
     preProcess' t = pure t
 
-auTheta :: [Term] -> State (Int, Subst [Term] Id) Term
+auTheta :: [Term] -> State (Id, Subst [Term] Id) Term
 auTheta terms =
   if null terms
     then error "auTheta: |terms| must be > 0"
@@ -47,7 +48,7 @@ auTheta terms =
                 case lookupSubst ts theta of
                   Just x -> pure (Var x) -- Rule 9
                   Nothing ->  -- Rule 10
-                    do z <- gen 'z' Id terms
+                    do z <- gen terms
                        pure (Var z)
 
 postProcess :: Term -> Subst Sy Id -> Term
@@ -60,7 +61,8 @@ au :: [Term] -> Term
 au terms =
   if null terms
     then error "au: |terms| must be > 0"
-    else let (terms', sub) = preProcess terms
+    else let vs = concatMap vars terms
+             (terms', sub) = preProcess terms
              invSubst = invertSubst sub
-             s = evalState (auTheta terms') (0, [])  -- Rule 6
+             s = evalState (auTheta terms') (fresh vs, [])  -- Rule 6
          in postProcess s invSubst
