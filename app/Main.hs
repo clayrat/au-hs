@@ -20,12 +20,18 @@ tests = TestList [
          (t, ts, subst)
 
   , TestLabel "pre-process-2" $ TestCase $
-      let (t, _, _) = preProcess (Arr (var "x") (sym "c")) []
-      in assertEqual "Pre-process with variable"
-         (Arr (sym "c'") (sym "c"))
-         t
+      let (t, ts, subst) = preProcess (var "x") []
+      in assertEqual "Single var pre-process"
+         (sym "c", [], Sub [(Id "x", Sy "c")])
+         (t, ts, subst)
 
   , TestLabel "pre-process-3" $ TestCase $
+      let (t, ts, subst) = preProcess (Arr (var "x") (sym "c")) []
+      in assertEqual "Pre-process with variable"
+         (Arr (sym "c'") (sym "c"), [], Sub [(Id "x", Sy "c'")])
+         (t, ts, subst)
+
+  , TestLabel "pre-process-4" $ TestCase $
       let x = var "x"
           y = var "y"
           input = Arr x (Arr (sym "c") (Arr y (Arr x y)))
