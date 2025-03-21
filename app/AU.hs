@@ -71,10 +71,10 @@ auTheta t ts =
 au :: [Term] -> Maybe Term
 au []     = Nothing
 au (t:ts) =
-  let vs = concatMap vars ts
+  let vs = (t:ts) >>= vars
       (t', ts', sub) = preProcess t ts
-      invSubst = invertSubst sub
+      isub = invertSubst sub
+      at = auTheta t' ts'                                     -- Rule 6
+      s = evalState at (fresh vs, empSubst)
     in
-  Just $
-  let s = evalState (auTheta t' ts') (fresh vs, empSubst) in  -- Rule 6
-  postProcess s invSubst
+  Just $ postProcess s isub
