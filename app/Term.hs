@@ -13,9 +13,9 @@ var = Var . Id
 sym :: String -> Term
 sym = Sym . Sy
 
-isArr :: Term -> Bool
-isArr (Arr _ _) = True
-isArr _         = False
+arrSplit :: Term -> Maybe (Term, Term)
+arrSplit (Arr a d) = Just (a, d)
+arrSplit _         = Nothing
 
 syms :: Term -> [Sy]
 syms (Var _)   = []

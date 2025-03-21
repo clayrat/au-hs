@@ -1,10 +1,16 @@
 module Subst where
 
-type Subst a b = [(a, b)]
+newtype Subst a b = Sub [(a, b)] deriving (Eq, Show)
+
+empSubst :: Subst a b
+empSubst = Sub []
+
+insertSubst :: a -> b -> Subst a b -> Subst a b
+insertSubst key val (Sub s) = Sub ((key, val) : s)
 
 lookupSubst :: Eq a => a -> Subst a b -> Maybe b
-lookupSubst _   []           = Nothing
-lookupSubst key ((k,v):rest) = if key == k then Just v else lookupSubst key rest
+lookupSubst _   (Sub [])           = Nothing
+lookupSubst key (Sub ((k,v):rest)) = if key == k then Just v else lookupSubst key (Sub rest)
 
 invertSubst :: Subst a b -> Subst b a
-invertSubst = map (\(x, y) -> (y, x))
+invertSubst (Sub s) = Sub (map (\(x, y) -> (y, x)) s)
