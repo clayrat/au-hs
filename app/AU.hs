@@ -6,11 +6,12 @@ import Base
 import Term
 import Subst
 
-uncouple :: Term -> [Term] -> Maybe ((Term, [Term]), (Term, [Term]))
-uncouple (Arr p q) ts =
-  fmap ((\(ps, qs) -> ((p , ps) , (q , qs))) . unzip) $
-  traverse arrSplit ts
-uncouple _         _ = Nothing
+unreplicate :: [Term] -> Maybe Term
+unreplicate []     = Nothing
+unreplicate (t:ts) = if all (== t) ts then Just t else Nothing
+
+uncouple :: [Term] -> Maybe ([Term], [Term])
+uncouple ts = unzip <$> traverse arrSplit ts
 
 gen :: Unfinite b => a -> State (b, Subst a b) b
 gen a = do
@@ -34,17 +35,12 @@ preProcessLoop (Var v) =
             pure (Sym c)
 preProcessLoop t = pure t
 
-preProcess1 :: Term -> [Term] -> State (Sy, Subst Id Sy) (Term, [Term])
-preProcess1 t ts =
-  do t' <- preProcessLoop t
-     ts' <- mapM preProcessLoop ts
-     pure (t', ts')
-
-preProcess :: Term -> [Term] -> (Term, [Term], Subst Id Sy)
-preProcess term terms =
-  let sys = concatMap syms (term:terms)
-      ((t, ts), (_ , s)) = runState (preProcess1 term terms) (fresh sys, empSubst)
-  in (t, ts, s)
+preProcess :: [Term] -> ([Term], Subst Id Sy)
+preProcess terms =
+  let sys = concatMap syms terms
+      st = traverse preProcessLoop terms
+      (ts, (_ , s)) = runState st (fresh sys, empSubst)
+  in (ts, s)
 
 -- post-processing
 
@@ -55,26 +51,38 @@ postProcess t           _   = t
 
 -- anti-unification
 
-auTheta :: Term -> [Term] -> State (Id, Subst [Term] Id) Term
-auTheta t ts =
-  if all (== t) ts then pure t                                -- Rule 7
-  else case uncouple t ts of
-         Just ((p, ps), (q, qs)) -> do p' <- auTheta p ps     -- Rule 8
-                                       q' <- auTheta q qs
-                                       pure (Arr p' q')
-         Nothing -> do theta <- gets snd
-                       case lookupSubst (t:ts) theta of
-                         Just x -> pure (Var x)               -- Rule 9
-                         Nothing -> do z <- gen (t:ts)        -- Rule 10
-                                       pure (Var z)
+type AUTy = State (Id, Subst [Term] Id) Term
+
+auArr :: AUTy -> AUTy -> AUTy
+auArr x y =
+  do p <- x
+     q <- y
+     pure (Arr p q)
+
+auMiss :: [Term] -> AUTy
+auMiss ts =
+  do theta <- gets snd
+     case lookupSubst ts theta of
+       Just x -> pure (Var x)                                 -- Rule 9
+       Nothing -> do z <- gen ts                              -- Rule 10
+                     pure (Var z)
+
+auTheta :: [Term] -> AUTy
+auTheta ts =
+  case unreplicate ts of
+    Just t  -> pure t                                         -- Rule 7
+    Nothing ->
+      case uncouple ts of
+        Just (ps, qs) -> auArr (auTheta ps) (auTheta qs)      -- Rule 8
+        Nothing       -> auMiss ts
 
 au :: [Term] -> Maybe Term
-au []     = Nothing
-au (t:ts) =
-  let vs = (t:ts) >>= vars
-      (t', ts', sub) = preProcess t ts
+au []       = Nothing
+au ts@(_:_) =
+  let vs = ts >>= vars
+      (ts', sub) = preProcess ts
       isub = invertSubst sub
-      at = auTheta t' ts'                                     -- Rule 6
+      at = auTheta ts'                                       -- Rule 6
       s = evalState at (fresh vs, empSubst)
     in
   Just $ postProcess s isub

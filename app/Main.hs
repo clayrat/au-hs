@@ -14,37 +14,36 @@ import AU
 tests :: Test
 tests = TestList [
     TestLabel "pre-process-1" $ TestCase $
-      let (t, ts, subst) = preProcess (Arr (sym "c") (sym "c")) []
+      let (ts, subst) = preProcess [(Arr (sym "c") (sym "c"))]
       in assertEqual "Simple pre-process"
-         (Arr (sym "c") (sym "c"), [], empSubst)
-         (t, ts, subst)
+         ([Arr (sym "c") (sym "c")], empSubst)
+         (ts, subst)
 
   , TestLabel "pre-process-2" $ TestCase $
-      let (t, ts, subst) = preProcess (var "x") []
+      let (ts, subst) = preProcess [(var "x")]
       in assertEqual "Single var pre-process"
-         (sym "c", [], Sub [(Id "x", Sy "c")])
-         (t, ts, subst)
+         ([sym "c"], Sub [(Id "x", Sy "c")])
+         (ts, subst)
 
   , TestLabel "pre-process-3" $ TestCase $
-      let (t, ts, subst) = preProcess (Arr (var "x") (sym "c")) []
+      let (ts, subst) = preProcess [(Arr (var "x") (sym "c"))]
       in assertEqual "Pre-process with variable"
-         (Arr (sym "c'") (sym "c"), [], Sub [(Id "x", Sy "c'")])
-         (t, ts, subst)
+         ([Arr (sym "c'") (sym "c")], Sub [(Id "x", Sy "c'")])
+         (ts, subst)
 
   , TestLabel "pre-process-4" $ TestCase $
       let x = var "x"
           y = var "y"
-          input = Arr x (Arr (sym "c") (Arr y (Arr x y)))
-          (t, _,_) = preProcess input []
+          (ts ,_) = preProcess [Arr x (Arr (sym "c") (Arr y (Arr x y)))]
       in assertEqual "Complex pre-process"
-         (Arr (sym "c'") (Arr (sym "c") (Arr (sym "c''") (Arr (sym "c'") (sym "c''")))))
-         t
+         [(Arr (sym "c'") (Arr (sym "c") (Arr (sym "c''") (Arr (sym "c'") (sym "c''")))))]
+         ts
 
   , TestLabel "post-process-1" $ TestCase $
       let x = var "x"
           y = var "y"
           input = Arr x (Arr (sym "c") (Arr y (Arr x y)))
-          (_, _, subst) = preProcess input []
+          (_, subst) = preProcess [input]
           invSubst = invertSubst subst
           processed = Arr (sym "c'") (Arr (sym "c") (Arr (sym "c''") (Arr (sym "c'") (sym "c''"))))
       in assertEqual "Post-process"
